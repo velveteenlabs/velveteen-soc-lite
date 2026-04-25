@@ -2,19 +2,32 @@
 Velveteen SOC Lite - Summary Generator
 
 Generates:
-- TXT summary (analyst quick view)
-- HTML dashboard (visual overview)
+- TXT summary
+- HTML dashboard
 
 Auto-opens both.
+
+Scoring:
+HIGH        = 5
+SUSPICIOUS  = 2
+REVIEW      = 0.25
+
+This reduces alert fatigue by separating low-confidence review items
+from stronger suspicious/high-risk findings.
 #>
 
 param(
     [string]$ReportDir = "$env:USERPROFILE\Desktop\Velveteen-SOC-Reports"
 )
 
-$reports = Get-ChildItem $ReportDir -Filter *.txt -ErrorAction SilentlyContinue
+if (-not (Test-Path $ReportDir)) {
+    New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
+}
 
-$totalScore = 0
+$reports = Get-ChildItem $ReportDir -Filter *.txt -ErrorAction SilentlyContinue |
+Where-Object { $_.Name -notmatch "Velveteen-Summary" }
+
+$totalScore = 0.0
 $high = 0
 $suspicious = 0
 $review = 0
@@ -23,38 +36,63 @@ foreach ($file in $reports) {
     $content = Get-Content $file.FullName -ErrorAction SilentlyContinue
 
     foreach ($line in $content) {
-        if ($line -match "\[HIGH\]") { $totalScore += 3; $high++ }
-        elseif ($line -match "\[SUSPICIOUS\]") { $totalScore += 2; $suspicious++ }
-        elseif ($line -match "\[REVIEW\]") { $totalScore += 1; $review++ }
+        if ($line -match "\[HIGH\]") {
+            $totalScore += 5
+            $high++
+        }
+        elseif ($line -match "\[SUSPICIOUS\]") {
+            $totalScore += 2
+            $suspicious++
+        }
+        elseif ($line -match "\[REVIEW\]") {
+            $totalScore += 0.25
+            $review++
+        }
     }
 }
 
-# Risk level
-if ($totalScore -ge 8) { $risk = "HIGH RISK" }
-elseif ($totalScore -ge 4) { $risk = "MODERATE RISK" }
-else { $risk = "LOW RISK" }
+$totalScore = [math]::Round($totalScore, 2)
 
-# === TXT OUTPUT ===
+if ($totalScore -ge 10) {
+    $risk = "HIGH RISK"
+}
+elseif ($totalScore -ge 4) {
+    $risk = "MODERATE RISK"
+}
+else {
+    $risk = "LOW RISK"
+}
+
 $txtOutput = @"
 ===============================
 Velveteen SOC Summary
 ===============================
-Total Score: $totalScore
+Generated: $(Get-Date)
+Report Directory: $ReportDir
+
 Risk Level : $risk
+Total Score: $totalScore
 
 Breakdown:
 HIGH       : $high
 SUSPICIOUS : $suspicious
 REVIEW     : $review
 
+Scoring Model:
+HIGH       = 5
+SUSPICIOUS = 2
+REVIEW     = 0.25
+
 Reports Analyzed: $($reports.Count)
+
+Analyst Note:
+REVIEW findings are low-confidence observations and should not be treated as direct evidence of compromise.
 ===============================
 "@
 
 $txtPath = Join-Path $ReportDir "Velveteen-Summary.txt"
 $txtOutput | Out-File $txtPath -Encoding UTF8
 
-# === HTML OUTPUT ===
 $color = switch ($risk) {
     "HIGH RISK" { "#ff4d4d" }
     "MODERATE RISK" { "#ffcc00" }
@@ -74,17 +112,29 @@ body {
 }
 .container {
     border: 1px solid #30363d;
-    padding: 20px;
-    border-radius: 10px;
+    padding: 24px;
+    border-radius: 12px;
+    max-width: 850px;
 }
 h1 {
     color: $color;
 }
 .box {
-    margin-top: 15px;
-    padding: 10px;
+    margin-top: 16px;
+    padding: 14px;
     border: 1px solid #30363d;
-    border-radius: 5px;
+    border-radius: 8px;
+    background-color: #161b22;
+}
+.badge {
+    color: #0d1117;
+    background-color: $color;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+small {
+    color: #8b949e;
 }
 </style>
 </head>
@@ -93,19 +143,30 @@ h1 {
 <h1>Velveteen SOC Summary</h1>
 
 <div class="box">
-<strong>Risk Level:</strong> $risk<br>
-<strong>Total Score:</strong> $totalScore
+<span class="badge">$risk</span><br><br>
+<strong>Total Score:</strong> $totalScore<br>
+<strong>Generated:</strong> $(Get-Date)<br>
+<strong>Reports Analyzed:</strong> $($reports.Count)
 </div>
 
 <div class="box">
-<strong>Breakdown:</strong><br>
+<strong>Finding Breakdown</strong><br><br>
 HIGH: $high<br>
 SUSPICIOUS: $suspicious<br>
 REVIEW: $review
 </div>
 
 <div class="box">
-<strong>Reports Analyzed:</strong> $($reports.Count)
+<strong>Scoring Model</strong><br><br>
+HIGH = 5<br>
+SUSPICIOUS = 2<br>
+REVIEW = 0.25<br><br>
+<small>REVIEW findings are low-confidence observations intended for analyst triage, not direct evidence of compromise.</small>
+</div>
+
+<div class="box">
+<strong>Report Directory</strong><br>
+$ReportDir
 </div>
 
 </div>
@@ -116,10 +177,9 @@ REVIEW: $review
 $htmlPath = Join-Path $ReportDir "Velveteen-Summary.html"
 $html | Out-File $htmlPath -Encoding UTF8
 
-# === OPEN BOTH ===
 Start-Process $txtPath
 Start-Process $htmlPath
 
-Write-Host "Summary generated:"
+Write-Host "Velveteen summary generated:"
 Write-Host $txtPath
 Write-Host $htmlPath -ForegroundColor Green
