@@ -1,8 +1,15 @@
-﻿# Quick Start
+# Quick Start
 
-1. Open PowerShell as Administrator
-2. Navigate to /scripts
-3. Run desired module
+## Requirements
+- Windows 10/11
+- PowerShell 5.1+
+- No external dependencies
 
-Example:
-.\Velveteen-NetTrace.ps1
+---
+
+## Running the Toolkit
+
+Open PowerShell and navigate to the scripts folder:
+
+```powershell
+cd scripts
