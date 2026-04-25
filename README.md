@@ -1,32 +1,58 @@
 # Velveteen SOC Lite
 
-Velveteen SOC Lite is a lightweight PowerShell toolkit for Windows endpoint triage and local host monitoring.
+Velveteen SOC Lite is a lightweight PowerShell-based endpoint investigation toolkit that simulates a basic SOC-style workflow on a standalone Windows host.
 
-It provides a small SOC-style workflow for:
+It provides visibility into:
+- process activity
+- network connections
+- persistence mechanisms
+- system drivers
+- post-boot system state
 
-- real-time suspicious process alerts
-- process-to-network connection mapping
-- startup, scheduled task, and service persistence review
-- driver and kernel-adjacent inspection
-- post-boot baseline capture
+The toolkit is designed for:
+- cybersecurity students
+- CTI / SOC portfolio projects
+- lab environments
+- defensive security learning
 
-This toolkit is designed for defensive security, student labs, portfolio demonstrations, and endpoint investigation practice.
+---
 
-It does not remove files, kill processes, or modify system settings by default.
+## 🔍 Features
 
-## Example Workflow
+- Real-time process monitoring (ProcessSentinel)
+- Process-to-network correlation (NetTrace)
+- Persistence analysis (startup, services, tasks, WMI)
+- Driver and kernel-level inspection
+- Post-boot baseline capture
+- Risk scoring and summary generation
+- TXT + HTML reporting
 
-1. Run BootBaseline after system startup
-2. Run PersistenceScan to identify auto-start mechanisms
-3. Launch ProcessSentinel for real-time monitoring
-4. Use NetTrace to correlate active network connections
-5. Investigate suspicious drivers with DriverInspector
+---
 
-## Purpose
+## 🧰 Toolkit Modules
 
-This toolkit demonstrates a lightweight, analyst-driven approach to endpoint triage without requiring enterprise EDR tooling.
+| Script | Description |
+|------|--------|
+| `Velveteen-ProcessSentinel.ps1` | Real-time process monitoring and alerting |
+| `Velveteen-NetTrace.ps1` | Maps active network connections to processes |
+| `Velveteen-PersistenceScan.ps1` | Detects common persistence mechanisms |
+| `Velveteen-DriverInspector.ps1` | Enumerates and evaluates system drivers |
+| `Velveteen-BootBaseline.ps1` | Captures system state after boot |
+| `Velveteen-Summary.ps1` | Aggregates findings and generates risk score |
 
-It is designed to:
-- replicate core SOC workflows
-- improve visibility on standalone Windows hosts
-- support learning, labs, and portfolio demonstrations
+---
+
+## ⚡ Quick Start
+
+```powershell
+cd scripts
+
+# Run individual modules
+.\Velveteen-BootBaseline.ps1
+.\Velveteen-PersistenceScan.ps1
+.\Velveteen-ProcessSentinel.ps1
+.\Velveteen-NetTrace.ps1
+.\Velveteen-DriverInspector.ps1
+
+# Generate summary
+.\Velveteen-Summary.ps1
